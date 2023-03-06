@@ -8,6 +8,7 @@ ROOT = Path("/home/jongphago/family-photo-tree")
 DATA = ROOT / "data"
 FACE = DATA / "face-image"
 DICT = DATA / "dict"
+DTFR = DATA / "dataframe"
 
 
 def get_face_target_path(key, c, category):
