@@ -28,11 +28,12 @@ def get_face_target_path(key, c, category):
 
 
 def get_face_image_path_from_series(series: pd.Series) -> Path:
+    basename = series.uuid if 'uuid' in series else series.name
     return (
         FACE
         / series.data_category
         / series.folder_name
         / series.family_id
         / f"{series.family_id}-{series.personal_id}"
-        / f"{series.name}.jpg"
+        / f"{basename}.jpg"
     )
