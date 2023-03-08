@@ -2,3 +2,5 @@
 data
 *.pyc
 nohup.out
+lfw/**/*.jpg
+*.tgz
