@@ -6,6 +6,7 @@ from matplotlib import ticker
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from fpt.path import get_face_image_path_from_series as get_path
 
 
 def set_ax_locator(ax, size):
@@ -112,3 +113,18 @@ def create_face_series(key, c, DATA_CATEGORY, target) -> pd.Series:
             "personal_id": c,
         }
     )
+
+
+def join_face_df(DTFR, data_category="aihub_sample"):
+    face_path = DTFR / f"df_{data_category}_face.csv"
+    file_path = DTFR / f"df_{data_category}_file.csv"
+    _file = pd.read_csv(face_path, index_col="key", dtype={"folder_name": object})
+    _face = pd.read_csv(file_path, index_col="key")
+    face = _face.join(_file, on="key")
+    face.loc[:, "path"] = face.apply(lambda x: str(get_path(x)), axis=1)
+    face.loc[:, "target"] = face.apply(
+        lambda x: f"{x.family_id}-{x.personal_id}", axis=1
+    )
+    face = face.sort_values(["family_id", "personal_id", "category", "option"])
+    face = face.reset_index().set_index("uuid")
+    return face
