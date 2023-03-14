@@ -120,7 +120,7 @@ def join_face_df(DTFR, data_category="aihub_sample"):
     file_path = DTFR / f"df_{data_category}_file.csv"
     _file = pd.read_csv(face_path, index_col="key", dtype={"folder_name": object})
     _face = pd.read_csv(file_path, index_col="key")
-    face = _face.join(_file, on="key")
+    face = _face.join(_file, on="key", how="right")
     face.loc[:, "path"] = face.apply(lambda x: str(get_path(x)), axis=1)
     face.loc[:, "target"] = face.apply(
         lambda x: f"{x.family_id}-{x.personal_id}", axis=1

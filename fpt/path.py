@@ -6,6 +6,7 @@ import pandas as pd
 
 ROOT = Path("/home/jongphago/family-photo-tree")
 DATA = ROOT / "data"
+UTIL = ROOT / "utils"
 FACE = DATA / "face-image"
 DICT = DATA / "dict"
 DTFR = DATA / "dataframe"
