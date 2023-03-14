@@ -4,3 +4,4 @@ data
 nohup.out
 lfw/**/*.jpg
 *.tgz
+utils/dataset/split/*.txt
