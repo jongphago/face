@@ -31,16 +31,19 @@ with open(DICT / BBOX_DICT, "r") as f:
 if __name__ == "__main__":
     df_sample_face = init_df_sample_face()
     for key, value in tqdm(sample_bbox_dict.items()):
-        image_path = sample_file_dict[key]["image"]
-        out = crop_faces(key, value, image_path)
-        classes = [r[0] for r in value]
-        for sliced_array, c in zip(out, classes):
-            target = get_face_target_path(key, c, category=DATA_CATEGORY)
-            face_image = Image.fromarray(np.uint8(sliced_array))
-            face_image = face_image.convert("RGB")
-            face_image.save(target)
-            series = create_face_series(key, c, DATA_CATEGORY, target)
-            df_sample_face.loc[target.stem] = series
+        try:
+            image_path = sample_file_dict[key]["image"]
+            out = crop_faces(key, value, image_path)
+            classes = [r[0] for r in value]
+            for sliced_array, c in zip(out, classes):
+                target = get_face_target_path(key, c, category=DATA_CATEGORY)
+                face_image = Image.fromarray(np.uint8(sliced_array))
+                face_image = face_image.convert("RGB")
+                face_image.save(target)
+                series = create_face_series(key, c, DATA_CATEGORY, target)
+                df_sample_face.loc[target.stem] = series
+        except:
+            continue
 
     df_sample_face.to_csv(DTFR / f"df_{DATA_CATEGORY}_face.csv", index_label="uuid")
 
