@@ -5,3 +5,4 @@ nohup.out
 lfw/**/*.jpg
 *.tgz
 utils/dataset/split/*.txt
+utils/model/arcface/**/backbone.pth
