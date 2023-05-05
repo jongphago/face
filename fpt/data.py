@@ -8,6 +8,40 @@ import numpy as np
 import pandas as pd
 from fpt.path import get_face_image_path_from_series as get_path
 
+RANGE_TO_MEDIAN = {
+    "a": (1 + 6) / 2,
+    "b": (7 + 12) / 2,
+    "c": (13 + 19) / 2,
+    "d": (20 + 30) / 2,
+    "e": (31 + 45) / 2,
+    "f": (46 + 55) / 2,
+    "g": (56 + 66) / 2,
+    "h": (67 + 80) / 2,
+    "above": 90,
+}
+AGE_GROUPS = ["a", "b", "c", "d", "e", "f", "g", "h", "above"]
+GROUP_TO_INDEX = {group: index for index, group in enumerate(AGE_GROUPS)}
+
+
+def age_to_age_groups(age):
+    if age <= 6:
+        return "a"
+    if age <= 12:
+        return "b"
+    if age <= 19:
+        return "c"
+    if age <= 30:
+        return "d"
+    if age <= 45:
+        return "e"
+    if age <= 55:
+        return "f"
+    if age <= 66:
+        return "g"
+    if age <= 80:
+        return "h"
+    return "above"
+
 
 def set_ax_locator(ax, size):
     width, height = size
@@ -127,4 +161,30 @@ def join_face_df(DTFR, data_category="aihub_sample"):
     )
     face = face.sort_values(["family_id", "personal_id", "category", "option"])
     face = face.reset_index().set_index("uuid")
+
+    # Age
+    age_df = pd.read_csv(DTFR / "df_aihub_ages.csv", index_col=0)
+    face = face.join(age_df, on="target")
+
+    # Age group
+    ages = face[face.category == "Age"]
+    age_group_df = (
+        ages.key.str.split("_").map(lambda x: x[-1][0]).to_frame(name="age_group")
+    )
+    face = face.join(age_group_df)
+
+    # Update age
+    face.loc[age_group_df.index, "age"] = None
+    
+    # fill age
+    is_age_null = face['age'].isnull()
+    range_to_age = face.loc[is_age_null, 'age_group'].map(lambda x: RANGE_TO_MEDIAN[x])
+    face.loc[is_age_null, 'age'] = range_to_age
+    
+    # fill age group
+    is_age_group_null = face['age_group'].isnull()
+    age_groups = face.loc[is_age_group_null, 'age'].map(lambda x: age_to_age_groups(int(x)))
+    face.loc[is_age_group_null, 'age_group'] = age_groups
+    face.age = face.age.astype(int)
+
     return face
