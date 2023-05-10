@@ -1,5 +1,8 @@
 .vscode/settings.json
 data
-fpt/__pycache__
-utils/model/**/*.pth
+*.pyc
+nohup.out
+lfw/**/*.jpg
+*.tgz
 utils/dataset/split/*.txt
+utils/model/arcface/**/backbone.pth
