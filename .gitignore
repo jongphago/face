@@ -1,2 +1,5 @@
 .vscode/settings.json
 data
+fpt/__pycache__
+utils/model/**/*.pth
+utils/dataset/split/*.txt
