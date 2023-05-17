@@ -12,3 +12,7 @@ def get_folder_name(family_id: str) -> str:
         가장 작은 자연수. '0#00' 형식
     """
     return f"{floor(int(family_id[-4:])/100)*100:04d}"
+
+
+def tensor_to_int(x):
+    return x.cpu().data.numpy().item()
