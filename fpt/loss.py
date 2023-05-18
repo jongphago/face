@@ -1,6 +1,7 @@
 import os
 from typing import Callable
 import numpy as np
+from easydict import EasyDict as edict
 import torch
 from torch import distributed
 from torch.nn import CrossEntropyLoss
@@ -131,3 +132,9 @@ module_partial_fc = PartialFC_V2(
     cfg.sample_rate,
     cfg.fp16,
 )
+
+loss = edict({
+    "face": module_partial_fc.cuda(),
+    "age": age_loss_func,
+    "kinship": kinship_loss_func
+})

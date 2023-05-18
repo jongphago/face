@@ -1,3 +1,4 @@
+from easydict import EasyDict as edict
 import torch
 from torch import nn
 from arcface_torch.backbones import get_model
@@ -54,3 +55,8 @@ selected_params = {
 age_module.load_state_dict(selected_params)
 
 kinship_module = KinshipModule(NUM_TRAIN_FAMILY)
+
+model = edict()
+model.embedding = face_age_model
+model.age = age_module
+model.kinship = kinship_module
