@@ -5,7 +5,10 @@ from fpt.data import join_face_df
 from fpt.model import model
 from fpt.loss import loss
 from fpt.dataloader import face_age_train_loader as train_loader
+from fpt.dataloader import face_age_valid_loader as valid_loader
+from fpt.dataloader import aihub_pairs_valid_loader as pair_valid_loader
 from fpt.train import train
+from fpt.evaluate import evaluate, evaluate_fv
 from torch.optim import SGD
 from arcface_torch.lr_scheduler import PolyScheduler
 
@@ -17,7 +20,7 @@ if __name__ == "__main__":
     optimizer = SGD(
         params=[
             {"params": model.embedding.parameters()},
-            {"params": loss.face.parameters()},
+            {"params": model.face.parameters()},
             {"params": model.kinship.parameters()},
         ],
         lr=cfg.lr,
@@ -38,8 +41,6 @@ if __name__ == "__main__":
 
     for current_epoch in range(1, cfg.num_epoch + 1):
         print(f"Current epoch: {current_epoch}/{cfg.num_epoch}")
-        for key, value in model.items():
-            model[key] = value.train()
 
         train(
             train_loader,
@@ -47,4 +48,14 @@ if __name__ == "__main__":
             model,
             optimizer,
             lr_scheduler,
+        )
+
+        evaluate(
+            valid_loader,
+            model,
+        )
+        
+        evaluate_fv(
+            pair_valid_loader,
+            model,
         )

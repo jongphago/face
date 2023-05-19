@@ -1,12 +1,8 @@
 import torch
 from fpt.utils import tensor_to_int
 from fpt.config import cfg
-from fpt.path import DTFR
-from fpt.data import join_face_df
 from fpt.loss import mean_variance_loss, cross_entropy_loss
-
-
-face_df = join_face_df(DTFR, "aihub_family")
+from fpt.loss import loss as loss_dict
 
 
 def train(
@@ -16,11 +12,15 @@ def train(
     optimizer,
     lr_scheduler,
 ):
+    for key, value in model.items():
+            model[key] = value.train()
+            
     for index, sample in enumerate(dataloader):
         embeddings = model.embedding(sample.image.cuda())
         loss = 0
         if cfg.is_fr:
-            fr_loss: torch.Tensor = losses.face(embeddings, sample.face_label.cuda())
+            face_pred = model.face(embeddings)
+            fr_loss: torch.Tensor = losses.face(face_pred, sample, loss_dict)
             loss += fr_loss
         if cfg.is_ae:
             age_pred, age_group_pred = model.age(embeddings)
@@ -56,4 +56,5 @@ def train(
         loss.backward()
         optimizer.step()
         lr_scheduler.step()
-        # break
+        break
+ 

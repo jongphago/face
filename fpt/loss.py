@@ -5,7 +5,6 @@ from easydict import EasyDict as edict
 import torch
 from torch import distributed
 from torch.nn import CrossEntropyLoss
-from torch.nn.functional import normalize, linear
 from arcface_torch.losses import CombinedMarginLoss
 from arcface_torch.partial_fc_v2 import PartialFC_V2
 from nia_age.mean_variance_loss import MeanVarianceLoss
@@ -13,54 +12,17 @@ from nia_age.main_ae import LAMBDA_1, LAMBDA_2, START_AGE, END_AGE
 from fpt.config import cfg
 
 
-NUM_CLASSES = cfg.num_classes
+def face_loss_func(face_pred, sample, loss):
+    # labels
+    labels = sample.face_label.cuda()
+    labels.squeeze_()
+    labels = labels.long()
+    labels = labels.view(-1, 1)
 
+    # softmax
+    softmax = loss.margin_loss(face_pred, labels)
 
-class FaceRecogFC(torch.nn.Module):
-    def __init__(
-        self,
-        margin_loss: Callable,
-        embedding_size: int,
-        num_classes: int,
-    ):
-        super(FaceRecogFC, self).__init__()
-        self.cross_entropy = CrossEntropyLoss()
-        self.embedding_size = embedding_size
-        self.weight = torch.nn.Parameter(torch.normal(0, 0.01, (1, embedding_size)))
-        self.margin_loss = margin_loss
-        self.num_classes = num_classes
-
-    def forward(
-        self,
-        embeddings: torch.Tensor,
-        labels: torch.Tensor,
-    ):
-        # labels
-        labels.squeeze_()
-        labels = labels.long()
-        labels = labels.view(-1, 1)
-
-        # embeddings
-        norm_embeddings = normalize(embeddings)
-
-        # weight
-        weight = torch.nn.Parameter(
-            torch.normal(0, 0.01, (self.num_classes, 512))
-        ).cuda()
-        norm_weight_activated = normalize(weight)
-        norm_weight_activated.shape
-
-        # logits
-        logits = linear(norm_embeddings, norm_weight_activated)
-        logits = logits.clamp(-1, 1)
-
-        # softmax
-        softmax = self.margin_loss(logits, labels)
-
-        # loss
-        loss = self.cross_entropy(softmax, labels.flatten())
-
-        return loss
+    return loss.cross_entropy_loss(softmax, labels.flatten())
 
 
 def age_loss_func(age_pred, age_group_pred, sample, mean_variance_loss, criterion):
@@ -91,11 +53,6 @@ margin_loss = CombinedMarginLoss(
     cfg.interclass_filtering_threshold,
 )
 
-face_recog_fc = FaceRecogFC(
-    margin_loss,
-    512,
-    NUM_CLASSES,
-)
 
 mean_variance_loss = MeanVarianceLoss(
     LAMBDA_1,
@@ -133,8 +90,12 @@ module_partial_fc = PartialFC_V2(
     cfg.fp16,
 )
 
-loss = edict({
-    "face": module_partial_fc.cuda(),
-    "age": age_loss_func,
-    "kinship": kinship_loss_func
-})
+loss = edict(
+    {
+        "face": face_loss_func,
+        "age": age_loss_func,
+        "kinship": kinship_loss_func,
+        "margin_loss": margin_loss.cuda(),
+        "cross_entropy_loss": cross_entropy_loss.cuda(),
+    }
+)
