@@ -1,17 +1,7 @@
-from re import X
-from easydict import EasyDict as edict
 import torch
 from torch import nn
 from torch.nn.functional import normalize, linear
 from arcface_torch.backbones import get_model
-from fpt.config import cfg
-from nia_age.main_ae import AgeModel
-from nia_age.main_ae import START_AGE, END_AGE, NUM_AGE_GROUPS
-
-NUM_TRAIN_FAMILY = 700
-NUM_AGES = END_AGE - START_AGE + 1
-network = "r50"
-NUM_CLASSES = cfg.num_classes
 
 
 class FaceRecogFC(torch.nn.Module):
@@ -68,29 +58,71 @@ class KinshipModule(nn.Module):
         return kinship_pred
 
 
-face_age_model = get_model(network, dropout=0.0)
-face_age_path = (
-    f"/home/jupyter/family-photo-tree/utils/model/arcface/{network}/backbone.pth"
-)
-face_age_model.load_state_dict(torch.load(face_age_path))
+class Model:
+    def __init__(self, config):
+        self.config = config
+        self.face = None
+        self.embedding = None
+        self.age = None
+        self.kinship = None
+        self.load()
 
-face_module = FaceRecogFC(512, NUM_CLASSES)
-nia_age_path = "/home/jongphago/nia_age/result_model/model_0"
-age_module = AgeModule(NUM_AGES, NUM_AGE_GROUPS)
-saved_params = torch.load(nia_age_path)
-selected_params = {
-    k: v
-    for k, v in saved_params.items()
-    if "age_classifier" in k or "age_group_classifier" in k
-}
-age_module.load_state_dict(selected_params)
-kinship_module = KinshipModule(NUM_TRAIN_FAMILY)
+    def get_embedding(self, dropout=0.0):
+        self.embedding = get_model(self.config.network, dropout=dropout)
 
-model = edict(
-    {
-        "embedding": face_age_model.cuda(),
-        "face": face_module.cuda(),
-        "age": age_module.cuda(),
-        "kinship": kinship_module.cuda(),
-    }
-)
+    def load_embedding(self, path=None):
+        if path is None:
+            path = f"/home/jupyter/family-photo-tree/utils/model/arcface/{self.config.network}/backbone.pth"
+        self.embedding.load_state_dict(torch.load(path))
+
+    def get_face_module(self):
+        self.face = FaceRecogFC(self.config.embedding_size, self.config.num_classes)
+
+    def get_age_module(self):
+        self.age = AgeModule(self.config.num_ages, self.config.num_age_groups)
+
+    def load_age_module(self, path=None):
+        if path is None:
+            path = "/home/jongphago/nia_age/result_model/model_0"
+        saved_params = torch.load(path)
+        selected_params = {
+            k: v
+            for k, v in saved_params.items()
+            if "age_classifier" in k or "age_group_classifier" in k
+        }
+        self.age.load_state_dict(selected_params)
+
+    def get_kinship_module(self):
+        self.kinship = KinshipModule(self.config.num_train_family)
+
+    def load(self):
+        self.get_embedding()
+        self.load_embedding()
+        self.embedding.cuda()
+        if self.config.is_fr:
+            self.get_face_module()
+        if self.config.is_ae:
+            self.get_age_module()
+            self.load_age_module()
+            self.age.cuda()
+        if self.config.is_kr:
+            self.get_kinship_module()
+            self.kinship.cuda()
+
+    def to_train(self):
+        self.embedding.train()
+        if self.config.is_fr:
+            self.face.train()
+        if self.config.is_ae:
+            self.age.train()
+        if self.config.is_fr:
+            self.kinship.train()
+
+    def to_eval(self):
+        self.embedding.eval()
+        if self.config.is_fr:
+            self.face.eval()
+        if self.config.is_ae:
+            self.age.eval()
+        if self.config.is_fr:
+            self.kinship.train()
