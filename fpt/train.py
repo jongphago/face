@@ -8,15 +8,17 @@ def train(
     optimizer,
     lr_scheduler,
     config,
+    logger,
+    epoch,
+    global_step,
 ):
     model.to_train()
-
-    for index, data in enumerate(dataloader):
+    for data in dataloader:
+        global_step.increment()
+        index = global_step.get()
         embeddings = model.embedding(data.image.cuda())
         total_loss = 0
         if config.is_fr:
-            # face_pred = model.face(embeddings)
-            # fr_loss: torch.Tensor = loss.face(face_pred, data)
             fr_loss = loss.module_partial_fc(embeddings, data.face_label.cuda())
             total_loss += fr_loss * config.weight.face
         if config.is_ae:
@@ -35,7 +37,7 @@ def train(
             kinship_loss = loss.kinship(kinship_pred, data)
             total_loss += kinship_loss * config.weight.kinship
 
-        if index % 10 == 0:
+        if index % config.log_interval == 0:
             print(f"{index:4d},", end=" ")
             if config.is_fr:
                 print(f"fr: {fr_loss.item():4.2f}", end=" ")
@@ -46,12 +48,26 @@ def train(
                 )
             if config.is_kr:
                 print(f"kinship: {kinship_loss.item():4.2f}", end=" ")
-            print(f"TOTAL_LOSS: {total_loss}")
-
+            print(f"WEIGHTED_TOTAL_LOSS: {total_loss}")
+            if logger:
+                logger.log(
+                    {
+                        "step": index,
+                        "Train/epoch": epoch,
+                        "Train/fr_loss": fr_loss.item(),
+                        "Train/age_loss": age_loss.item(),
+                        "Train/age_group_loss": age_group_loss.item(),
+                        "Train/weighted_mean_variance_loss": weighted_mean_variance_loss.item(),
+                        "Train/kinship_loss": kinship_loss.item(),
+                        "Train/total_loss": total_loss.item(),
+                        "Train/learning rate": lr_scheduler.get_last_lr()[0],
+                    }
+                )
         torch.nn.utils.clip_grad_norm_(model.embedding.parameters(), 5)
         optimizer.zero_grad()
         total_loss.backward()
         optimizer.step()
         lr_scheduler.step()
 
+        # if index % 20 == 0:
         # break
