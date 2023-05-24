@@ -7,3 +7,4 @@ lfw/**/*.jpg
 utils/dataset/split/*.txt
 utils/model/arcface/**/backbone.pth
 wandb
+.vscode
