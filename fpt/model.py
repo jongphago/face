@@ -115,7 +115,7 @@ class Model:
             self.face.train()
         if self.config.is_ae:
             self.age.train()
-        if self.config.is_fr:
+        if self.config.is_kr:
             self.kinship.train()
 
     def to_eval(self):
