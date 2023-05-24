@@ -8,3 +8,5 @@ utils/dataset/split/*.txt
 utils/model/arcface/**/backbone.pth
 wandb
 .vscode
+plots
+logs
