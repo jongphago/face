@@ -39,30 +39,31 @@ def train(
 
         if index % config.log_interval == 0:
             print(f"{index:4d},", end=" ")
+            log_dict = {
+                "step": index,
+                "Train/epoch": epoch,
+                "Train/learning rate": lr_scheduler.get_last_lr()[0],
+            }
             if config.is_fr:
                 print(f"fr: {fr_loss.item():4.2f}", end=" ")
+                log_dict["Train/fr_loss"] = fr_loss.item()
             if config.is_ae:
                 print(
                     f"age: {age_loss.item():4.2f}, age_group: {age_group_loss.item():4.2f}, age_mean_var: {weighted_mean_variance_loss.item():4.2f}",
                     end=" ",
                 )
+                log_dict["Train/age_loss"] = age_loss.item()
+                log_dict["Train/age_group_loss"] = age_group_loss.item()
+                log_dict[
+                    "Train/weighted_mean_variance_loss"
+                ] = weighted_mean_variance_loss.item()
             if config.is_kr:
                 print(f"kinship: {kinship_loss.item():4.2f}", end=" ")
+                log_dict["Train/kinship_loss"] = kinship_loss.item()
             print(f"WEIGHTED_TOTAL_LOSS: {total_loss}")
+            log_dict["Train/total_loss"] = total_loss.item()
             if logger:
-                logger.log(
-                    {
-                        "step": index,
-                        "Train/epoch": epoch,
-                        "Train/fr_loss": fr_loss.item(),
-                        "Train/age_loss": age_loss.item(),
-                        "Train/age_group_loss": age_group_loss.item(),
-                        "Train/weighted_mean_variance_loss": weighted_mean_variance_loss.item(),
-                        "Train/kinship_loss": kinship_loss.item(),
-                        "Train/total_loss": total_loss.item(),
-                        "Train/learning rate": lr_scheduler.get_last_lr()[0],
-                    }
-                )
+                logger.log(log_dict)
         torch.nn.utils.clip_grad_norm_(model.embedding.parameters(), 5)
         optimizer.zero_grad()
         total_loss.backward()

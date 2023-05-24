@@ -1,3 +1,4 @@
+from pprint import pprint
 from torch.optim import SGD
 import numpy as np
 from fpt.loss import Loss
@@ -28,19 +29,26 @@ def log_verification_output(validate_output, wandb_logger, prefix, step):
         )
 
 
+def add_parameters(config, model, loss):
+    params = [{"params": model.embedding.parameters()}]
+    if config.is_fr:
+        params.append({"params": model.face.parameters()})
+        params.append({"params": loss.module_partial_fc.parameters()})
+    if config.is_ae:
+        params.append({"params": model.age.parameters()})
+    if config.is_kr:
+        params.append({"params": model.kinship.parameters()})
+    return params
+
+
 if __name__ == "__main__":
+    print(cfg)
     num_train_steps = len(train_loader)
     wandb_logger = initialize_wandb(cfg)
     loss = Loss(cfg)
     model = Model(cfg)
     optimizer = SGD(
-        params=[
-            {"params": model.age.parameters()},
-            {"params": model.face.parameters()},
-            {"params": model.kinship.parameters()},
-            {"params": model.embedding.parameters()},
-            {"params": loss.module_partial_fc.parameters()},
-        ],
+        params=add_parameters(cfg, model, loss),
         lr=cfg.lr,
         momentum=cfg.momentum,
         weight_decay=cfg.weight_decay,
