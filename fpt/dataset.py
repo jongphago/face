@@ -92,3 +92,9 @@ aihub_pairs_test_dataset = AIHubDataset(
     pairs_path="/home/jupyter/data/pairs/test/pairs_Age.txt",
     transform=aihub_valid_transforms,
 )
+
+aihub_pairs_sample_dataset = AIHubDataset(
+    dir="/home/jupyter/data/face-image/test_aihub_family",
+    pairs_path="/home/jupyter/data/pairs/sample/pairs_Age.txt",
+    transform=aihub_valid_transforms,
+)
