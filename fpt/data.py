@@ -198,4 +198,8 @@ def join_face_df(DTFR="/home/jupyter/data/dataframe", data_category="aihub_sampl
         face.loc[is_age_group_null, "age_group"] = age_groups
         face.age = face.age.astype(int)
 
+        # gender
+        face["gender"] = face["personal_id"].apply(
+            lambda x: "Female" if "D" in x or "M" in x else "Male"
+        )
         return face
