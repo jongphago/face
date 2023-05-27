@@ -6,6 +6,7 @@ from fpt.dataset import (
     aihub_pairs_valid_dataset,
     aihub_pairs_test_dataset,
     aihub_pairs_sample_dataset,
+    aihub_pairs_case1_dataset,
 )
 
 train_batch_size = 32
@@ -51,6 +52,13 @@ pairs_test_loader = DataLoader(
 
 pairs_sample_loader = DataLoader(
     aihub_pairs_sample_dataset,
+    batch_size=pairs_batch_size,
+    num_workers=0,
+    shuffle=False,
+)
+
+case1_test_loader = DataLoader(
+    aihub_pairs_case1_dataset,
     batch_size=pairs_batch_size,
     num_workers=0,
     shuffle=False,
