@@ -10,3 +10,4 @@ wandb
 .vscode
 plots
 logs
+work_dirs/**/*.pt
