@@ -1,4 +1,5 @@
 import torch
+from datetime import datetime
 
 
 def train(
@@ -38,7 +39,12 @@ def train(
             total_loss += kinship_loss * config.weight.kinship
 
         if index % config.log_interval == 0:
-            print(f"{index:4d},", end=" ")
+            now = datetime.now().strftime("%D %T")
+            num_data = len(dataloader)
+            print(
+                f"{now} Epoch:{epoch}/{config.num_epoch} {index+num_data*(epoch-1):4d}/{num_data*config.num_epoch}({(index+num_data*(epoch-1))/(num_data*config.num_epoch):2.0%}),",
+                end=" ",
+            )
             log_dict = {
                 "step": index,
                 "Train/epoch": epoch,
@@ -49,7 +55,7 @@ def train(
                 log_dict["Train/fr_loss"] = fr_loss.item()
             if config.is_ae:
                 print(
-                    f"age: {age_loss.item():4.2f}, age_group: {age_group_loss.item():4.2f}, age_mean_var: {weighted_mean_variance_loss.item():4.2f}",
+                    f"age:{age_loss.item():4.2f}, age_group:{age_group_loss.item():4.2f}, age_mv:{weighted_mean_variance_loss.item():4.2f}",
                     end=" ",
                 )
                 log_dict["Train/age_loss"] = age_loss.item()
@@ -58,9 +64,9 @@ def train(
                     "Train/weighted_mean_variance_loss"
                 ] = weighted_mean_variance_loss.item()
             if config.is_kr:
-                print(f"kinship: {kinship_loss.item():4.2f}", end=" ")
+                print(f"kinship:{kinship_loss.item():4.2f}", end=" ")
                 log_dict["Train/kinship_loss"] = kinship_loss.item()
-            print(f"WEIGHTED_TOTAL_LOSS: {total_loss}")
+            print(f"w.total_loss:{total_loss:4.2f}")
             log_dict["Train/total_loss"] = total_loss.item()
             if logger:
                 logger.log(log_dict)
