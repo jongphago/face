@@ -4,6 +4,17 @@ from arcface_torch.configs.base import config as cfg
 from nia_age.main_ae import LAMBDA_1, LAMBDA_2, START_AGE, END_AGE, NUM_AGE_GROUPS
 from easydict import EasyDict as edict
 
+
+def update_config(config, wandb_logger):
+    config.lr = wandb_logger.config.lr
+    config.num_epoch = wandb_logger.config.num_epoch
+    config.weight.face = wandb_logger.config.face_weight
+    config.weight.age = wandb_logger.config.age_weight
+    config.weight.age_group = wandb_logger.config.age_group_weight
+    config.weight.age_mean_var = wandb_logger.config.age_mean_var_weight
+    return config
+
+
 cfg.update(aihub_config)
 cfg.output = "work_dirs/aihub_r50_onegpu"
 cfg.num_classes = 2154

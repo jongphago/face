@@ -18,6 +18,10 @@ default_params = {
     "network": {"values": ["r50"]},
     "embedding_size": {"values": [512]},
     "sample_rate": {"min": 0.7, "max": 1.0, "distribution": "uniform"},
+    "face_weight": {"min": 0.1, "max": 1.0, "distribution": "uniform"},
+    "age_weight": {"min": 0.1, "max": 1.0, "distribution": "uniform"},
+    "age_group_weight": {"min": 0.1, "max": 1.0, "distribution": "uniform"},
+    "age_mean_var_weight": {"min": 0.1, "max": 1.0, "distribution": "uniform"},
     "momentum": {
         "values": [
             0.9,
@@ -33,7 +37,7 @@ default_params = {
         ]
     },
     "dropout": {"min": 0.0, "max": 0.5, "distribution": "uniform"},
-    "num_epoch": {"values": [1, 2, 5]},
+    "num_epoch": {"values": [5, 10]},
     "optimizer": {
         "values": [
             "sgd",

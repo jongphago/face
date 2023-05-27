@@ -5,7 +5,7 @@ import wandb
 from fpt.loss import Loss
 from fpt.model import Model
 from fpt.train import train
-from fpt.config import cfg
+from fpt.config import cfg, update_config
 from fpt.global_step import GlobalStep
 from fpt.logger import initialize_wandb
 from fpt.sweep import sweep_configuration
@@ -24,10 +24,9 @@ from arcface_torch.lr_scheduler import PolyScheduler
 wandb_project_name = "test-task"
 
 
-def main():
+def main(cfg):
     wandb_logger = initialize_wandb(cfg)
-    cfg.lr = wandb_logger.config.lr
-    cfg.num_epoch = wandb_logger.config.num_epoch
+    cfg = update_config(cfg, wandb_logger)
 
     num_train_steps = len(train_loader)
     pprint(cfg)
@@ -98,5 +97,5 @@ if __name__ == "__main__":
         entity="jongphago",
         project=wandb_project_name,
     )
-    wandb.agent(sweep_id, main)
-    main()
+    wandb.agent(sweep_id, lambda: main(cfg))
+    
