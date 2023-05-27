@@ -21,7 +21,7 @@ from fpt.dataloader import (
 from facenet.validate_aihub import validate_aihub
 from arcface_torch.lr_scheduler import PolyScheduler
 
-wandb_project_name = "test-task"
+wandb_project_name = cfg.project_name
 
 
 def main(cfg):

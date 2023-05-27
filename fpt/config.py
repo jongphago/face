@@ -30,6 +30,7 @@ def update_config(config, wandb_logger):
 
 
 cfg.update(aihub_config)
+cfg.project_name = ""
 cfg.output = "work_dirs/aihub_r50_onegpu"
 cfg.num_classes = 2154
 
@@ -38,9 +39,9 @@ cfg.weight_decay = 5e-4  #
 cfg.lr = 0.02
 
 cfg.is_fr, cfg.is_ae, cfg.is_kr = [
-    True,
-    True,
-    False,
+    None,
+    None,
+    None,
 ]
 
 cfg.total_step = 2900
