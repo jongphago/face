@@ -20,13 +20,28 @@ def save_checkpoint(
             "epoch": epoch + 1,
             "global_step": global_step.get(),
             "state_dict_backbone": model.embedding.state_dict(),
-            "state_dict_face": model.face.state_dict(),
-            "state_dict_age": model.age.state_dict(),
-            "state_dict_kinship": model.kinship.state_dict(),
-            "state_dict_softmax_fc": loss.module_partial_fc.state_dict(),
             "state_optimizer": optimizer.state_dict(),
             "state_lr_scheduler": lr_scheduler.state_dict(),
         }
+        if config.is_fr:
+            checkpoint.update(
+                {
+                    "state_dict_face": model.face.state_dict(),
+                    "state_dict_softmax_fc": loss.module_partial_fc.state_dict(),
+                }
+            )
+        if config.is_ae:
+            checkpoint.update(
+                {
+                    "state_dict_age": model.age.state_dict(),
+                }
+            )
+        if config.is_kr:
+            checkpoint.update(
+                {
+                    "state_dict_kinship": model.kinship.state_dict(),
+                }
+            )
         torch.save(checkpoint, os.path.join(output, f"checkpoint_gpu.pt"))
 
     path_module = os.path.join(output, "model.pt")
