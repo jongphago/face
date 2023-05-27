@@ -22,6 +22,7 @@ default_params = {
     "age_weight": {"min": 0.1, "max": 1.0, "distribution": "uniform"},
     "age_group_weight": {"min": 0.1, "max": 1.0, "distribution": "uniform"},
     "age_mean_var_weight": {"min": 0.1, "max": 1.0, "distribution": "uniform"},
+    "kinship_weight": {"min": 0.1, "max": 1.0, "distribution": "uniform"},
     "momentum": {
         "values": [
             0.9,
