@@ -12,11 +12,13 @@ cfg.momentum = 0.9  #
 cfg.weight_decay = 5e-4  #
 cfg.lr = 0.02
 
-cfg.is_fr = True
-cfg.is_ae = True
-cfg.is_kr = True
+cfg.is_fr, cfg.is_ae, cfg.is_kr = [
+    True,
+    True,
+    False,
+]
 
-cfg.total_step = 1452
+cfg.total_step = 2900
 cfg.warmup_step = 0
 
 cfg.num_train_family = 700
@@ -29,10 +31,15 @@ cfg.lambdas = LAMBDA_1, LAMBDA_2
 cfg.start_age = START_AGE
 cfg.end_age = END_AGE
 
-cfg.weight = edict({
-    "face": 1.,
-    "age": 1.,
-    "age_group": 1.,
-    "age_mean_var": 1.,
-    "kinship": 1.,
-})
+cfg.weight = edict(
+    {
+        "age": 1.0,
+        "face": 1.0,
+        "age_group": 1.0,
+        "age_mean_var": 1.0,
+        "kinship": 1.0,
+    }
+)
+
+cfg.log_interval = 10
+cfg.num_epoch = 2

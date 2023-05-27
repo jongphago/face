@@ -21,22 +21,21 @@ def train(
         total_loss = 0
         if config.is_fr:
             fr_loss = loss.module_partial_fc(embeddings, data.face_label.cuda())
-            total_loss += fr_loss * config.weight.face
+            fr_loss *= config.weight.face
+            total_loss += fr_loss
         if config.is_ae:
             age_pred, age_group_pred = model.age(embeddings)
             total_age_loss = loss.age((age_pred, age_group_pred), data)
             age_loss, age_group_loss, weighted_mean_variance_loss = total_age_loss
-            total_loss += sum(
-                [
-                    age_loss * config.weight.age,
-                    age_group_loss * config.weight.age_group,
-                    weighted_mean_variance_loss * config.weight.age_mean_var,
-                ]
-            )
+            age_loss *= config.weight.age
+            age_group_loss *= config.weight.age_group
+            weighted_mean_variance_loss *= config.weight.age_mean_var
+            total_loss += sum([age_loss, age_group_loss, weighted_mean_variance_loss])
         if config.is_kr:
             kinship_pred = model.kinship(embeddings)
             kinship_loss = loss.kinship(kinship_pred, data)
-            total_loss += kinship_loss * config.weight.kinship
+            kinship_loss *= config.weight.kinship
+            total_loss += kinship_loss
 
         if index % config.log_interval == 0:
             now = datetime.now().strftime("%D %T")
