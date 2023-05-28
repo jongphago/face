@@ -16,21 +16,13 @@ def update_config(config, wandb_logger):
     config.weight_decay = wandb_logger.config.weight_decay
     config.dropout = wandb_logger.config.dropout
     config.optimizer = wandb_logger.config.optimizer
-    
-    if config.is_fr:
-        config.weight.face = wandb_logger.config.face_weight
-    if config.is_ae:
-        config.weight.age = wandb_logger.config.age_weight
-        config.weight.age_group = wandb_logger.config.age_group_weight
-        config.weight.age_mean_var = wandb_logger.config.age_mean_var_weight
-    if config.is_kr:
-        config.weight.kinship = wandb_logger.config.kinship_weight
-        
     return config
 
 
 cfg.update(aihub_config)
 cfg.project_name = ""
+cfg.is_debug = False
+
 cfg.output = "work_dirs/aihub_r50_onegpu"
 cfg.num_classes = 2154
 
@@ -44,6 +36,14 @@ cfg.is_fr, cfg.is_ae, cfg.is_kr = [
     None,
 ]
 
+cfg.num_losses = 0
+if cfg.is_fr:
+    cfg.num_losses += 1
+if cfg.is_ae:
+    cfg.num_losses += 3
+if cfg.is_kr:
+    cfg.num_losses += 1
+
 cfg.total_step = 2900
 cfg.warmup_step = 0
 
@@ -56,16 +56,6 @@ cfg.scale = 64
 cfg.lambdas = LAMBDA_1, LAMBDA_2
 cfg.start_age = START_AGE
 cfg.end_age = END_AGE
-
-cfg.weight = edict(
-    {
-        "age": 1.0,
-        "face": 1.0,
-        "age_group": 1.0,
-        "age_mean_var": 1.0,
-        "kinship": 1.0,
-    }
-)
 
 cfg.log_interval = 10
 cfg.num_epoch = 2

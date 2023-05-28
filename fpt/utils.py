@@ -45,4 +45,5 @@ def add_parameters(config, model, loss):
         params.append({"params": model.age.parameters()})
     if config.is_kr:
         params.append({"params": model.kinship.parameters()})
+    params.append({"params": loss.multi_loss_layer.parameters()})
     return params

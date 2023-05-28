@@ -18,24 +18,25 @@ def train(
         global_step.increment()
         index = global_step.get()
         embeddings = model.embedding(data.image.cuda())
-        total_loss = 0
+        loss_list = []
+        loss_name = []
         if config.is_fr:
             fr_loss = loss.module_partial_fc(embeddings, data.face_label.cuda())
-            fr_loss *= config.weight.face
-            total_loss += fr_loss
+            loss_list.append(fr_loss)
+            loss_name.append("fr_loss")
         if config.is_ae:
             age_pred, age_group_pred = model.age(embeddings)
             total_age_loss = loss.age((age_pred, age_group_pred), data)
             age_loss, age_group_loss, weighted_mean_variance_loss = total_age_loss
-            age_loss *= config.weight.age
-            age_group_loss *= config.weight.age_group
-            weighted_mean_variance_loss *= config.weight.age_mean_var
-            total_loss += sum([age_loss, age_group_loss, weighted_mean_variance_loss])
+            loss_list += [age_loss, age_group_loss, weighted_mean_variance_loss]
+            loss_name += ["age_loss", "age_group_loss", "weighted_mean_variance_loss"]
         if config.is_kr:
             kinship_pred = model.kinship(embeddings)
             kinship_loss = loss.kinship(kinship_pred, data)
-            kinship_loss *= config.weight.kinship
-            total_loss += kinship_loss
+            loss_list.append(kinship_loss)
+            loss_name.append("kinship_loss")
+
+        total_loss = loss.multi_loss_layer(loss_list)
 
         if index % config.log_interval == 0:
             now = datetime.now().strftime("%D %T")
@@ -49,22 +50,10 @@ def train(
                 "Train/epoch": epoch,
                 "Train/learning rate": lr_scheduler.get_last_lr()[0],
             }
-            if config.is_fr:
-                print(f"fr: {fr_loss.item():4.2f}", end=" ")
-                log_dict["Train/fr_loss"] = fr_loss.item()
-            if config.is_ae:
-                print(
-                    f"age:{age_loss.item():4.2f}, age_group:{age_group_loss.item():4.2f}, age_mv:{weighted_mean_variance_loss.item():4.2f}",
-                    end=" ",
-                )
-                log_dict["Train/age_loss"] = age_loss.item()
-                log_dict["Train/age_group_loss"] = age_group_loss.item()
-                log_dict[
-                    "Train/weighted_mean_variance_loss"
-                ] = weighted_mean_variance_loss.item()
-            if config.is_kr:
-                print(f"kinship:{kinship_loss.item():4.2f}", end=" ")
-                log_dict["Train/kinship_loss"] = kinship_loss.item()
+
+            for value, name in zip(loss_list, loss_name):
+                log_dict[f"Train/{name}"] = value
+                print(f"{name}: {value:4.2f}", end=" ")
             print(f"w.total_loss:{total_loss:4.2f}")
             log_dict["Train/total_loss"] = total_loss.item()
             if logger:

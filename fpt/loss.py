@@ -1,16 +1,36 @@
 import os
 import numpy as np
+import torch
 from torch import distributed
 from torch.nn import CrossEntropyLoss
 from arcface_torch.losses import CombinedMarginLoss
 from arcface_torch.partial_fc_v2 import PartialFC_V2
 from nia_age.mean_variance_loss import MeanVarianceLoss
 
+from torch import nn
+
+
+class MultiLossLayer(nn.Module):
+    def __init__(self, list_size):
+        super(MultiLossLayer, self).__init__()
+        self.list_size = list_size
+        self.log_vars = nn.Parameter(torch.zeros(list_size))
+        self.loss_lis = None
+
+    def forward(self, losses):
+        dtype = self.log_vars.dtype
+        self.loss_list = [
+            torch.exp(-self.log_vars[i]) * losses[i] + self.log_vars[i]
+            for i in range(self.list_size)
+        ]
+        return sum(self.loss_list)
+
 
 class Loss:
     def __init__(self, config):
         self.config = config
         self.margin_loss = None
+        self.multi_loss_layer = None
         self.module_partial_fc = None
         self.cross_entropy_loss = CrossEntropyLoss()
         self.define()
@@ -93,4 +113,4 @@ class Loss:
         self.define_margin_loss()
         self.define_mean_variance_loss()
         self.define_partial_fc()
-
+        self.multi_loss_layer = MultiLossLayer(list_size=self.config.num_losses)  # number of losses
