@@ -59,3 +59,8 @@ cfg.end_age = END_AGE
 
 cfg.log_interval = 10
 cfg.num_epoch = 2
+
+cfg.train_batch_size = 32
+cfg.valid_batch_size = 1
+cfg.test_batch_size = 1
+cfg.pairs_batch_size = 512

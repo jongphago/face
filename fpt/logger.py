@@ -23,7 +23,7 @@ def initialize_wandb(config):
             wandb_logger = (
                 wandb.init(
                     entity=config.wandb_entity,
-                    project=config.wandb_project,
+                    project=config.project_name,
                     sync_tensorboard=True,
                     resume=config.wandb_resume,
                     name=run_name,
