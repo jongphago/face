@@ -1,9 +1,9 @@
 import pandas as pd
-from fpt.path import UTIL
+from fpt.path import DATA
 
 
 def get_split_path(STAGE):
-    return UTIL / "dataset" / "split" / f"{STAGE}_split.txt"
+    return DATA / "split" / f"{STAGE}_split.txt"
 
 
 def write_split(STAGE, uuids):
