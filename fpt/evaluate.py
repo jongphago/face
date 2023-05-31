@@ -1,54 +1,83 @@
+import os
+import json
 import argparse
+from tqdm import tqdm
+import torch
+from easydict import EasyDict as edict
 from torch.utils.data import DataLoader
+from torch.nn.modules.distance import PairwiseDistance
 from fpt.path import DATA
 from fpt.config import cfg
 from fpt.model import Model
 from fpt.dataset import AIHubDataset
 from fpt.logger import initialize_wandb
-from fpt.utils import log_verification_output
 from fpt.transform import aihub_valid_transforms
-from facenet.validate_aihub import validate_aihub
+
+
+def get_checkpoint_info(model_path):
+    dirname = os.path.dirname(model_path)
+    json_path = os.path.join(dirname, "best.json")
+    with open(json_path, "r") as f:
+        checkpoint_dict = json.load(f)
+        checkpoint_dict = edict(checkpoint_dict)
+    return checkpoint_dict
 
 
 def evaluate(task, config, checkpoint, project_name=None):
     # config
     if project_name is not None:
         config.project_name = project_name
-    
+    pairs_batch_size = 32
+    config.wandb_resume = True
+
+    # distance metric
+    l2_distance = PairwiseDistance(p=2)
+
     # dataloader
     pairs_dataset = AIHubDataset(
         dir=DATA / "face-image/test_aihub_family",
         pairs_path=DATA / f"pairs/test/pairs_{task.upper()}.txt",
         transform=aihub_valid_transforms,
     )
-    case1c_test_loader = DataLoader(pairs_dataset, batch_size=config.pairs_batch_size)
-
-    # logger
-    wandb_logger = initialize_wandb(config)
+    test_loader = DataLoader(pairs_dataset, batch_size=pairs_batch_size)
 
     # model
     model = Model(config)
     model_path = f"/home/jongphago/family-photo-tree/work_dirs/aihub_r50_onegpu/{checkpoint}_ArcFace/model.pt"
     model.load_embedding(path=model_path)
 
+    # checkpoint dict
+    ckp_dict = get_checkpoint_info(model_path)
+    best_distance = ckp_dict.best_distance
+    config.run_name = f"{ckp_dict.about}-{ckp_dict.checkpoint}"
+    config["about"] = ckp_dict.about
+    config["best_distance"] = ckp_dict.best_distance
+    
+
+    # logger
+    logger = initialize_wandb(config)
+
     # evaluate
-    validate_output = validate_aihub(
-        model.embedding, case1c_test_loader, "r50", 1, task=task
-    )
+    out = 0
+    for a, b, label in tqdm(test_loader):
+        output_a = model.embedding(a.cuda())
+        output_b = model.embedding(b.cuda())
+        distance = l2_distance.forward(output_a, output_b)  # Euclidean distance
+        result = torch.eq(distance.cpu().detach() < best_distance, label)
+        out += result.sum().detach()
 
     # logging
-    log_verification_output(
-        validate_output, wandb_logger, task.capitalize(), 0
-    )
+    accuracy = out / len(test_loader.dataset)
+    print(f"{task.capitalize()}/accuracy: {accuracy:4.2%}")
+    logger.log({f"{task.capitalize()}/accuracy": accuracy})
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--task', required=True)
-    parser.add_argument('--checkpoint', required=True)
-    parser.add_argument('--project_name', required=False)
+    parser.add_argument("--task", required=True)
+    parser.add_argument("--checkpoint", required=True)
+    parser.add_argument("--project_name", required=False)
     args = parser.parse_args()
 
     cfg.project_name = args.project_name if args.project_name else "log_test_validation"
     evaluate(args.task, cfg, args.checkpoint, cfg.project_name)
-    

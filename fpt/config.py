@@ -64,3 +64,5 @@ cfg.train_batch_size = 32
 cfg.valid_batch_size = 1
 cfg.test_batch_size = 1
 cfg.pairs_batch_size = 512
+
+cfg.run_name = None
