@@ -13,20 +13,24 @@ def initialize_wandb(config):
             print(f"Config Error: {e}")
 
         # Initialize wandb
-        run_name = datetime.now().strftime("%y%m%d_%H%M")
-        run_name = (
-            run_name
-            if config.suffix_run_name is None
-            else run_name + f"_{config.suffix_run_name}"
-        )
+        if config.run_name is not None:
+            run_name = config.run_name
+        else:
+            run_name = datetime.now().strftime("%y%m%d_%H%M")
+            run_name = (
+                run_name
+                if config.suffix_run_name is None
+                else run_name + f"_{config.suffix_run_name}"
+            )
         try:
             wandb_logger = (
                 wandb.init(
                     entity=config.wandb_entity,
-                    project=config.wandb_project,
+                    project=config.project_name,
                     sync_tensorboard=True,
                     resume=config.wandb_resume,
                     name=run_name,
+                    config=config,
                 )
                 if config.wandb_log_all
                 else None

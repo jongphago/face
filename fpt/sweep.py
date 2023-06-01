@@ -1,8 +1,8 @@
 from fpt.config import cfg
 
 sweep_configuration = {
-    "name": "ArcFace Hyperparameter Optimization",
-    "method": "grid",
+    "name": cfg.project_name,
+    "method": "bayes",
     "metric": {"name": "Valid/accuracy", "goal": "maximize"},
     "early_terminate": {"type": "hyperband", "min_iter": 1},
     "parameters": {},
@@ -27,24 +27,7 @@ default_params = {
         ]
     },
     "embedding_size": {"values": [512]},
-    "sample_rate": {
-        "values": [
-            0.9001014311315707,
-        ],
-        # "min": 0.7,
-        # "max": 1.0,
-        # "distribution": "uniform",
-    },
-    "face_weight": {
-        "values": [
-            0.2537532973163787,
-        ]
-        # "min": 0.1, "max": 1.0, "distribution": "uniform"
-    },
-    # "age_weight": {"min": 0.1, "max": 1.0, "distribution": "uniform"},
-    # "age_group_weight": {"min": 0.1, "max": 1.0, "distribution": "uniform"},
-    # "age_mean_var_weight": {"min": 0.1, "max": 1.0, "distribution": "uniform"},
-    # "kinship_weight": {"min": 0.1, "max": 1.0, "distribution": "uniform"},
+    "sample_rate": {"min": 0.7, "max": 1.0, "distribution": "uniform"},
     "momentum": {
         "values": [
             0.9,

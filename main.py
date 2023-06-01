@@ -21,13 +21,11 @@ from fpt.dataloader import (
 from facenet.validate_aihub import validate_aihub
 from arcface_torch.lr_scheduler import PolyScheduler
 
-wandb_project_name = cfg.project_name
-
 
 def main(cfg):
     wandb_logger = initialize_wandb(cfg)
-    cfg = update_config(cfg, wandb_logger)
-
+    if not cfg.is_debug:
+        cfg = update_config(cfg, wandb_logger)
     num_train_steps = len(train_loader)
     pprint(cfg)
     loss = Loss(cfg)
@@ -92,10 +90,12 @@ def main(cfg):
 
 
 if __name__ == "__main__":
-    sweep_id = wandb.sweep(
-        sweep_configuration,
-        entity="jongphago",
-        project=wandb_project_name,
-    )
-    wandb.agent(sweep_id, lambda: main(cfg))
-    
+    if cfg.is_debug:
+        main(cfg)
+    else:
+        sweep_id = wandb.sweep(
+            sweep_configuration,
+            entity="jongphago",
+            project=cfg.project_name,
+        )
+        wandb.agent(sweep_id, lambda: main(cfg))
