@@ -2,6 +2,7 @@ import os
 import json
 import argparse
 from tqdm import tqdm
+from collections import defaultdict
 import torch
 from easydict import EasyDict as edict
 from torch.utils.data import DataLoader
@@ -23,7 +24,7 @@ def get_checkpoint_info(model_path):
     return checkpoint_dict
 
 
-def evaluate(task, config, checkpoint, project_name=None):
+def evaluate(tasks, config, checkpoint, project_name=None):
     # config
     if project_name is not None:
         config.project_name = project_name
@@ -32,14 +33,6 @@ def evaluate(task, config, checkpoint, project_name=None):
 
     # distance metric
     l2_distance = PairwiseDistance(p=2)
-
-    # dataloader
-    pairs_dataset = AIHubDataset(
-        dir=DATA / "face-image/test_aihub_family",
-        pairs_path=DATA / f"pairs/test/pairs_{task.upper()}.txt",
-        transform=aihub_valid_transforms,
-    )
-    test_loader = DataLoader(pairs_dataset, batch_size=pairs_batch_size)
 
     # model
     model = Model(config)
@@ -52,32 +45,68 @@ def evaluate(task, config, checkpoint, project_name=None):
     config.run_name = f"{ckp_dict.about}-{ckp_dict.checkpoint}"
     config["about"] = ckp_dict.about
     config["best_distance"] = ckp_dict.best_distance
-    
 
     # logger
     logger = initialize_wandb(config)
 
-    # evaluate
-    out = 0
-    for a, b, label in tqdm(test_loader):
-        output_a = model.embedding(a.cuda())
-        output_b = model.embedding(b.cuda())
-        distance = l2_distance.forward(output_a, output_b)  # Euclidean distance
-        result = torch.eq(distance.cpu().detach() < best_distance, label)
-        out += result.sum().detach()
+    tasks = [tasks] if isinstance(tasks, str) else tasks
+    acc_dict = defaultdict(int)
+    for task in tasks:
+        # dataloader
+        pairs_dataset = AIHubDataset(
+            dir=DATA / "face-image/test_aihub_family",
+            pairs_path=DATA / f"pairs/test/pairs_{task.upper()}.txt",
+            transform=aihub_valid_transforms,
+        )
+        test_loader = DataLoader(pairs_dataset, batch_size=pairs_batch_size)
 
-    # logging
-    accuracy = out / len(test_loader.dataset)
-    print(f"{task.capitalize()}/accuracy: {accuracy:4.2%}")
-    logger.log({f"{task.capitalize()}/accuracy": accuracy})
+        # evaluate
+        out = 0
+        for a, b, label in tqdm(test_loader):
+            output_a = model.embedding(a.cuda())
+            output_b = model.embedding(b.cuda())
+            distance = l2_distance.forward(output_a, output_b)  # Euclidean distance
+            result = torch.eq(distance.cpu().detach() < best_distance, label)
+            out += result.sum().detach()
+        
+
+        # logging
+        accuracy = out / len(test_loader.dataset)
+        print(f"{task.capitalize()}/accuracy: {accuracy:4.2%}")
+        acc_dict[f"{task.capitalize()}/accuracy"] = accuracy
+        
+    logger.log(acc_dict)
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--task", required=True)
-    parser.add_argument("--checkpoint", required=True)
-    parser.add_argument("--project_name", required=False)
-    args = parser.parse_args()
+    if False:
+        parser = argparse.ArgumentParser()
+        parser.add_argument("--tasks", required=True)
+        parser.add_argument("--checkpoint", required=True)
+        parser.add_argument("--project_name", required=False)
+        args = parser.parse_args()
 
-    cfg.project_name = args.project_name if args.project_name else "log_test_validation"
-    evaluate(args.task, cfg, args.checkpoint, cfg.project_name)
+        cfg.project_name = (
+            args.project_name if args.project_name else "log_test_validation"
+        )
+        evaluate(args.tasks, cfg, args.checkpoint, cfg.project_name)
+    else:
+        tasks = [
+            "BASIC-G",
+            "BASIC-GC",
+            "BASIC-A",
+            "BASIC-AC",
+            "BASIC-F",
+            "BASIC-FN",
+            "BASIC-FC",
+            "FAMILY-A",
+            "FAMILY-CA",
+            "FAMILY-G",
+            "FAMILY-CG",
+            "FAMILY-AG",
+            "FAMILY-CAG",
+            "PERSONAL-A",
+            "PERSONAL-AC",
+        ]
+        checkpoint = "230601_1838"
+        evaluate(tasks, cfg, checkpoint, "log_test_validation")
