@@ -1,9 +1,11 @@
 import os
 import json
 import argparse
+from datetime import datetime
 from tqdm import tqdm
 from collections import defaultdict
 import torch
+import wandb
 from easydict import EasyDict as edict
 from torch.utils.data import DataLoader
 from torch.nn.modules.distance import PairwiseDistance
@@ -26,10 +28,11 @@ def get_checkpoint_info(model_path):
 
 def evaluate(tasks, config, checkpoint, project_name=None):
     # config
+    now = datetime.now().strftime("%y%m%d_%H%M")
     if project_name is not None:
         config.project_name = project_name
     pairs_batch_size = 32
-    config.wandb_resume = True
+    config.wandb_resume = False
 
     # distance metric
     l2_distance = PairwiseDistance(p=2)
@@ -42,7 +45,7 @@ def evaluate(tasks, config, checkpoint, project_name=None):
     # checkpoint dict
     ckp_dict = get_checkpoint_info(model_path)
     best_distance = ckp_dict.best_distance
-    config.run_name = f"{ckp_dict.about}-{ckp_dict.checkpoint}"
+    config.run_name = f"{ckp_dict.about}-{ckp_dict.checkpoint}-{now}"
     config["about"] = ckp_dict.about
     config["best_distance"] = ckp_dict.best_distance
 
@@ -76,6 +79,7 @@ def evaluate(tasks, config, checkpoint, project_name=None):
         acc_dict[f"{task.capitalize()}/accuracy"] = accuracy
         
     logger.log(acc_dict)
+    logger.finish()
 
 
 if __name__ == "__main__":
@@ -108,5 +112,6 @@ if __name__ == "__main__":
             "PERSONAL-A",
             "PERSONAL-AC",
         ]
-        checkpoint = "230601_1838"
-        evaluate(tasks, cfg, checkpoint, "log_test_validation")
+        evaluate(tasks, cfg, "230529_0140", "test_validation")  # single
+        evaluate(tasks, cfg, "230602_0236", "test_validation")  # dual
+        evaluate(tasks, cfg, "230601_1838", "test_validation")  # triple
