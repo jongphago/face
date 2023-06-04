@@ -65,13 +65,23 @@ def evaluate(tasks, config, checkpoint, project_name=None):
 
         # evaluate
         out = 0
+        distances = []
         for a, b, label in tqdm(test_loader):
             output_a = model.embedding(a.cuda())
             output_b = model.embedding(b.cuda())
             distance = l2_distance.forward(output_a, output_b)  # Euclidean distance
             result = torch.eq(distance.cpu().detach() < best_distance, label)
             out += result.sum().detach()
-        
+            # Convert each value in the tensor to a number and add it to the list
+            for dist_value in distance.cpu().detach().numpy():
+                distances.append(str(dist_value))  # Add distance to the list
+
+        # Record distance values in a text file after all tasks are done
+        file_dir = DATA / f"distance/{ckp_dict['about']}/{ckp_dict['checkpoint']}"
+        os.makedirs(file_dir, exist_ok=True)  # Create directories if they do not exist
+        with open(file_dir / f"{task}.txt", "w") as f:
+            f.write(f"best_distance, {best_distance}\n")
+            f.write("\n".join(distances))
 
         # logging
         accuracy = out / len(test_loader.dataset)
