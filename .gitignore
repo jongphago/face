@@ -13,3 +13,4 @@ logs
 work_dirs/**/*.pt
 work_dirs/**/*.txt
 work_dirs/**/*.json
+utils/dataset/export/**/*.png
