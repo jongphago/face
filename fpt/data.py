@@ -149,42 +149,57 @@ def create_face_series(key, c, DATA_CATEGORY, target) -> pd.Series:
     )
 
 
-def join_face_df(DTFR, data_category="aihub_sample"):
-    face_path = DTFR / f"df_{data_category}_face.csv"
-    file_path = DTFR / f"df_{data_category}_file.csv"
-    _file = pd.read_csv(face_path, index_col="key", dtype={"folder_name": object})
-    _face = pd.read_csv(file_path, index_col="key")
-    face = _face.join(_file, on="key", how="right")
-    face.loc[:, "path"] = face.apply(lambda x: str(get_path(x)), axis=1)
-    face.loc[:, "target"] = face.apply(
-        lambda x: f"{x.family_id}-{x.personal_id}", axis=1
-    )
-    face = face.sort_values(["family_id", "personal_id", "category", "option"])
-    face = face.reset_index().set_index("uuid")
+def join_face_df(DTFR="/home/jupyter/data/dataframe", data_category="aihub_sample"):
+    try:
+        return pd.read_csv(
+            DTFR / f"{data_category}.csv",
+            index_col=0,
+            dtype={"folder_name": object},
+        )
+    except:
+        face_path = DTFR / f"df_{data_category}_face.csv"
+        file_path = DTFR / f"df_{data_category}_file.csv"
+        _file = pd.read_csv(face_path, index_col="key", dtype={"folder_name": object})
+        _face = pd.read_csv(file_path, index_col="key")
+        face = _face.join(_file, on="key", how="right")
+        face.loc[:, "path"] = face.apply(lambda x: str(get_path(x)), axis=1)
+        face.loc[:, "target"] = face.apply(
+            lambda x: f"{x.family_id}-{x.personal_id}", axis=1
+        )
+        face = face.sort_values(["family_id", "personal_id", "category", "option"])
+        face = face.reset_index().set_index("uuid")
 
-    # Age
-    age_df = pd.read_csv(DTFR / "df_aihub_ages.csv", index_col=0)
-    face = face.join(age_df, on="target")
+        # Age
+        age_df = pd.read_csv(DTFR / "df_aihub_ages.csv", index_col=0)
+        face = face.join(age_df, on="target")
 
-    # Age group
-    ages = face[face.category == "Age"]
-    age_group_df = (
-        ages.key.str.split("_").map(lambda x: x[-1][0]).to_frame(name="age_group")
-    )
-    face = face.join(age_group_df)
+        # Age group
+        ages = face[face.category == "Age"]
+        age_group_df = (
+            ages.key.str.split("_").map(lambda x: x[-1][0]).to_frame(name="age_group")
+        )
+        face = face.join(age_group_df)
 
-    # Update age
-    face.loc[age_group_df.index, "age"] = None
-    
-    # fill age
-    is_age_null = face['age'].isnull()
-    range_to_age = face.loc[is_age_null, 'age_group'].map(lambda x: RANGE_TO_MEDIAN[x])
-    face.loc[is_age_null, 'age'] = range_to_age
-    
-    # fill age group
-    is_age_group_null = face['age_group'].isnull()
-    age_groups = face.loc[is_age_group_null, 'age'].map(lambda x: age_to_age_groups(int(x)))
-    face.loc[is_age_group_null, 'age_group'] = age_groups
-    face.age = face.age.astype(int)
+        # Update age
+        face.loc[age_group_df.index, "age"] = None
 
-    return face
+        # fill age
+        is_age_null = face["age"].isnull()
+        range_to_age = face.loc[is_age_null, "age_group"].map(
+            lambda x: RANGE_TO_MEDIAN[x]
+        )
+        face.loc[is_age_null, "age"] = range_to_age
+
+        # fill age group
+        is_age_group_null = face["age_group"].isnull()
+        age_groups = face.loc[is_age_group_null, "age"].map(
+            lambda x: age_to_age_groups(int(x))
+        )
+        face.loc[is_age_group_null, "age_group"] = age_groups
+        face.age = face.age.astype(int)
+
+        # gender
+        face["gender"] = face["personal_id"].apply(
+            lambda x: "Female" if "D" in x or "M" in x else "Male"
+        )
+        return face
